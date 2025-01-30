@@ -8,7 +8,7 @@ output:
 date: "2025-01-28"
 ---
 UT EID: SRM5284
-Link to Github: 
+Link to Github: https://github.com/siddarthmorthala/SDS315-2025/blob/5082ba59e0396f3457a4b293beda95e4c327c57b/HW2SiddarthMorthala.Rmd
 
 # *Problem 1*
 ```{r, echo=FALSE, message=FALSE}
