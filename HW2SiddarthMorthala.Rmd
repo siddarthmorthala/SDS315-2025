@@ -1,0 +1,270 @@
+---
+title: "Homework 2"
+author: "Siddarth Morthala - SDS 315 UT Austin"
+output:
+  html_document: 
+    toc: true
+    toc_float: true
+date: "2025-01-28"
+---
+UT EID: SRM5284
+Link to Github: 
+
+# *Problem 1*
+```{r, echo=FALSE, message=FALSE}
+
+#library necessary packages
+library(ggplot2)
+library(dplyr)
+
+#read in csv file
+allprofessors <- read.csv("profs.csv")
+
+#create first histogram
+ggplot(allprofessors, aes(x = eval)) +
+  geom_histogram(binwidth = 0.5, fill = "red", color = "beige", alpha = 0.7) +
+  labs(title = "Histogram of UT Course Evaluation Scores", x = "Eval Score", y = "Frequency") +
+  theme_classic()
+meanofeval <- mean(allprofessors$eval)
+medianofeval <- median(allprofessors$eval)
+```
+
+The mean score is `r meanofeval` and the median is `r medianofeval`. The distribution shown on the histogram indicates that most teachers were given an evaluation score between 3.5 and 4.5 and the data is skewed right.
+
+```{r, echo=FALSE, message=FALSE}
+#create graph for course evaluation scores based on native english speakers or not
+ggplot(allprofessors, aes(x = native, y = eval, fill = native)) +
+  geom_boxplot() +
+  labs(title = "Course Evaluation Scores according to Native English Speaker or not", x = "Native English Speaker", y = "Eval") +
+  theme_classic() +
+  scale_fill_brewer(palette = "Set1")
+
+#calculate median of both
+medianofnotnative <- median(allprofessors$eval[allprofessors$native == "no"], na.rm=TRUE)
+
+medianofnative <- median(allprofessors$eval[allprofessors$native == "yes"], na.rm=TRUE)
+```
+
+Based on the comparison shown above, the median eval score for native english speaking professors is higher with a median of `r medianofnative` compared to the median for non native english speakers who have a median of `r medianofnotnative`. The favoritism of native english speakers makes sense because in most cases they are easier to follow.
+
+```{r, echo=FALSE, message=FALSE}
+
+#create histogram of eval scores based on gender
+ggplot(allprofessors, aes(x = eval)) +
+  geom_histogram(binwidth = 0.5, fill = "yellow", color = "black", alpha = 0.7) +
+  facet_wrap(~gender, nrow = 2) +
+  labs(title = "Histogram of Course Evaluation Scores by Gender", x = "Evaluation Score", y = "Frequency") +
+  theme_classic()
+#mean and median of males and females
+meanofmale <- mean(allprofessors$eval[allprofessors$gender == "male"], na.rm=TRUE)
+medianofmale <- median(allprofessors$eval[allprofessors$gender == "male"], na.rm=TRUE)
+meanoffemale <- mean(allprofessors$eval[allprofessors$gender == "female"], na.rm=TRUE)
+medianoffemale <- median(allprofessors$eval[allprofessors$gender == "female"], na.rm=TRUE)
+```
+
+The mean and median for males is `r meanofmale` and `r medianofmale`, while for females the mean and median are `r meanoffemale` and `r medianoffemale`. While the median and mean male rating is slightly higher, it is likely not a statistically significant difference.
+
+The median and means for male ratings at UT are slightly higher than the female ratings; however, it is most likely not a statistically significant difference. 
+
+The mean and median ratings for males is:
+
+Male Mean: `r meanofmale`
+Male Median: `r medianofmale`
+
+The mean and median ratings for females is:
+
+Female Mean: `r meanoffemale`
+Female Median: `r medianoffemale`
+
+```{r, echo=FALSE, message=FALSE}
+#plot the graph that compares attractiveness to prof eval
+ggplot(allprofessors, aes(x = beauty, y = eval)) +
+  geom_point(color = "green", alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(title = "Attractiveness vs Course Evaluation Scores", x = "Physical Attractiveness", y = "Evaluation Score") +
+  theme_classic()
+#find the correlation to see if the connection exists between these two variables
+correlation <- cor(allprofessors$beauty, allprofessors$eval, use="complete.obs")
+
+```
+
+The correlation for this distribution is `r correlation`, this means that the attractivesness likely didn't have an affect on the eval score.
+
+# *Problem 2*
+
+```{r, echo=FALSE, message=FALSE}
+
+#read in the csv file
+bikes <- read.csv("bikeshare.csv")
+avg_hourly <- bikes %>%
+  group_by(hr) %>%
+  summarise(avg_rentals = mean(total))
+#plot the data of the average bikes at use for each hour of the day
+ggplot(avg_hourly, aes(x=hr, y=avg_rentals)) +
+  geom_line(color="magenta", size=1) +
+  labs(title="Average Hourly Bike Rentals",
+       x="Hour of the Day (0-23)",
+       y="Average Rentals(Bikes actively used)") +
+  theme_classic()
+
+```
+
+After hour #5 the number of rentals increased rapidly, and remained high until around hour 20 with the peak number of rentals being at about hour 17.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+avg_by_workingday <- bikes %>%
+  group_by(hr, workingday) %>%
+  summarise(avg_rentals = mean(total))
+#plotting the graph for bike rentals based on working day or not
+ggplot(avg_by_workingday, aes(x=hr, y=avg_rentals, color=factor(workingday))) +
+  geom_line(size=1) +
+  facet_wrap(~ workingday, nrow=1) +
+  scale_color_manual(values=c("orange", "blue"), labels=c("Non-Working Day", "Working Day")) +
+  labs(title="Average Hourly Bike Rentals based on Working Day or not",
+       x="Hour of the Day (0-23)",
+       y="Average Rentals (Bikes actively used)",
+       color="Day Type") +
+  theme_classic()
+
+```
+
+The peaks on the graph above are higher for working days but the data shows to be more inconsistent on working days than non-working days. This makes it difficult to clearly state whether there are more rentals on non-working or working days.
+
+```{r fig.align='center', fig.width=8, fig.height=5, echo=FALSE, message=FALSE}
+avg_9am_weather <- bikes %>%
+  filter(hr == 9) %>%
+  group_by(weathersit, workingday) %>%
+  summarise(avg_rentals = mean(total))
+
+#plotting the bar graph for weather conditions and working vs non working days
+ggplot(avg_9am_weather, aes(x=factor(weathersit), y=avg_rentals, fill=factor(weathersit))) +
+  geom_bar(stat="identity") +
+  facet_wrap(~ workingday, nrow=1, labeller=labeller(workingday=c(`0`="Non-Working Day", `1`="Working Day"))) +
+  scale_fill_brewer(palette="Set2") +
+  labs(title="Average 9 AM Rentals by Weather Situation",
+       x="Weather Code",
+       y="Average Rentals(Bikes actively used)",
+       fill="Weather Code") +
+  theme_classic()
+
+```
+
+Rentals are higher on working days despite the weather conditions on hour 9. Code 3 leads to less rentals overall; however, the weather code 1 or 2 leads to a significantly higher number of rentals.
+
+# *Problem 3*
+```{r, echo=FALSE, message=FALSE}
+
+#reading in the csv file
+
+capdata <- read.csv("capmetro_UT.csv")
+capdata <- mutate(capdata,
+  day_of_week = factor(day_of_week, 
+                       levels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")),
+  month = factor(month, 
+                 levels = c("Sep", "Oct", "Nov"))
+)
+
+avg_boardings <- capdata %>%
+  group_by(hour_of_day, day_of_week, month) %>%
+  summarize(avg_boarding = mean(boarding, na.rm = TRUE))
+
+#plotting the line graph for average boardings per time frame
+ggplot(avg_boardings, aes(x = hour_of_day, y = avg_boarding, color = month, group = month)) +
+  geom_line(size = 1) +
+  facet_wrap(~ day_of_week, ncol = 4) +
+  labs(
+    title = "Average Boardings by Hour of the Day, Day of Week, and Month",
+    x = "Hour of Day",
+    y = "Average Boardings"
+  ) +
+  theme_classic() +
+  theme(strip.text = element_text(size = 10, face = "bold")) +
+  scale_color_manual(values = c("Sep" = "red", "Oct" = "yellow", "Nov" = "pink"))
+```
+
+The trends in boarding numbers vary depending on multiple factors, making each case unique. Generally, the peak hour for boardings is around hour 15. Average boardings on Mondays in September tend to be lower, likely because September follows the summer months when people are settling back into routine after travel. Additionally, Mondays see fewer travelers as the workweek begins, meaning those who needed to travel likely returned before then. Meanwhile, average boardings on Wednesdays, Thursdays, and Fridays could be lower due to the upcoming Thanksgiving holiday, as many travelers may have already booked flights for that period rather than flying earlier in the month.
+
+```{r, echo=FALSE, message=FALSE}
+#find the correlation coefficient
+correlation <- cor(capdata$temperature, capdata$boarding, use = "complete.obs")
+
+#create plot for boardings and temp
+ggplot(capdata, aes(x = temperature, y = boarding, color = weekend)) +
+  geom_point(alpha = 0.6) +
+  facet_wrap(~ hour_of_day, ncol = 4) +
+  labs(
+    title = "Boardings vs Temperature, Faceted by Hour of Day",
+    x = "Temperature (°F)",
+    y = "Boardings"
+  ) +
+  theme_classic() +
+  theme(strip.text = element_text(size = 10, face = "bold")) +
+  scale_color_manual(values = c("weekday" = "green", "weekend" = "brown"))
+
+```
+
+The graphs consistently indicate no correlation between temperature and boardings, even when controlling for the hour of the day and weekend status. This suggests that temperature has little to no impact on the number of boardings. The average correlation across all graphs is `r correlation`, which is very low, further supporting this conclusion.
+
+# *Problem 4*
+```{r, echo=FALSE, message=FALSE}
+#read in the csv file
+datafrombillboard <- read.csv("billboard.csv")
+
+topsongsbillboard <- datafrombillboard %>%
+  group_by(performer, song) %>%
+  summarize(count = max(weeks_on_chart, na.rm = TRUE)) %>%
+  ungroup() %>% #ungroup to ensure proper sorting
+  arrange(desc(count)) %>% #sort by count in descending order
+  slice(1:10)
+
+#display the sorted table
+print(topsongsbillboard)
+
+```
+
+The table above shows that the most popular song is Radioactive by Imagine Dragons and the least popular song is Before He Cheats by Carrie Underwood.
+
+```{r, echo=FALSE, message=FALSE}
+filtered_data <- datafrombillboard %>%
+  filter(year != 1958 & year != 2021)
+
+diversity_by_year <- filtered_data %>%
+  group_by(year) %>%
+  summarize(unique_songs = n_distinct(song))
+#library necessary packages
+library(ggplot2)
+#plot musical diversity graph
+ggplot(diversity_by_year, aes(x = year, y = unique_songs)) +
+  geom_line(color = "gold", size = 1) +
+  labs(
+    title = "Musical Diversity within the Billboard Top 100",
+    x = "Year",
+    y = "# of Unique Songs"
+  ) +
+  theme_classic()
+```
+
+The amount of unique songs started very high and slowly dipped over time.
+
+```{r, echo=FALSE}
+ten_week_hits <- datafrombillboard %>%
+  filter(weeks_on_chart >= 10) %>%
+  group_by(performer) %>%
+  summarize(ten_week_count = n_distinct(song)) %>%
+  filter(ten_week_count >= 30) %>%
+  arrange(desc(ten_week_count))
+
+ggplot(ten_week_hits, aes(x = reorder(performer, ten_week_count), y = ten_week_count)) +
+  geom_bar(stat = "identity", fill = "darkgreen") +
+  coord_flip() +
+  labs(
+    title = "Top Artists with 10 Week Hits on Billboard Top 100",
+    x = "Artist",
+    y = "Number of 10 Week Hits"
+  ) +
+  theme_classic()
+
+```
+
+The bar plot displays the 19 artists with the highest number of songs that have remained on the Billboard Hot 100 for 10 weeks, arranged in descending order from most to least.
