@@ -1,0 +1,358 @@
+---
+title: "Homework 3"
+author: "Siddarth Morthala - SDS 315 UT Austin"
+date: "02-12-2025"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+  pdf_document:
+    toc: true
+---
+* UT EID: SRM5284
+
+* Link to Github:
+
+## *Question 1*
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(mosaic)
+library(dplyr)
+library(tibble)
+library(tinytex)
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#load in csv 
+gaspricesdata <- read.csv("gasprices.csv")
+
+#select the correct variables in the dataset
+gaspricesdata <- gaspricesdata %>% select(Price, Competitors)
+
+# Define a function to calculate the difference in mean prices
+compute_mean_diff <- function(data) {
+  mean_no_comp <- mean(~Price, data = filter(data, Competitors == "N"))
+  mean_yes_comp <- mean(~Price, data = filter(data, Competitors == "Y"))
+  return(mean_no_comp - mean_yes_comp)
+}
+
+# Perform bootstrapping (resampling 10,000 times)
+set.seed(123)  # For reproducibility
+booresults <- do(10000) * compute_mean_diff(resample(gaspricesdata))
+
+# Compute the 95% confidence interval
+confint(booresults, level = 0.95)
+
+hist(booresults$compute_mean_diff, 
+     breaks = 50, 
+     col = "magenta", 
+     border = "black", 
+     main = "Bootstrap Distribution: Mean Price Difference (Competitors vs No Competitors)",
+     xlab = "Difference in Mean Gas Price (No Competitors - With Competitors)",
+     ylab = "Frequency")
+
+```
+
+Theory A:
+
+I wanted to see if gas stations without competitors nearby charge more than those with competition in sight. To test this, I conducted a bootstrap analysis comparing the average gas prices of stations with and without competitors. The results showed that stations without competitors charged about 2.3 cents more per gallon on average. However, the 95% confidence interval (-0.008, 0.055) includes zero, which means the difference could just be random and not actually caused by competition. Since this confidence interval doesn’t prove that competition affects prices, there isn’t enough evidence to fully support this theory. While it might seem like stations without competition charge a little more, the data isn’t strong enough for me to say for sure. Because of this, I don’t think this theory is strongly supported by the data.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Ensure 'Price' and 'Income' are numeric
+df <- read.csv("gasprices.csv")
+df <- df %>% dplyr::mutate(Price = as.numeric(Price))
+
+
+# Perform bootstrap for the correlation between Income and Price
+bootstrap_corr <- do(10000) * {
+  boot_sample <- resample(df)  # Resample the whole dataset
+  cor(boot_sample$Income, boot_sample$Price)  # Compute correlation
+}
+
+# Compute 95% confidence interval
+ci_corr <- quantile(bootstrap_corr$result, c(0.025, 0.975))
+mean_corr <- mean(bootstrap_corr$result)
+
+# Create a table with results
+results_tabl <- tibble(
+  "Statistic" = c("Lower Bound (2.5%)", "Upper Bound (97.5%)", "Mean Correlation"),
+  "Value" = c(ci_corr[1], ci_corr[2], mean_corr)
+)
+
+# Print the table
+print(results_tabl)
+
+# Create a histogram of the bootstrap sampling distribution
+ggplot(bootstrap_corr, aes(x = result)) +
+  geom_histogram(binwidth = 0.01, fill = "beige", color = "black") +
+  geom_vline(xintercept = mean_corr, color = "red", linetype = "dashed", size = 1) +
+  geom_vline(xintercept = ci_corr, color = "blue", linetype = "dotted", size = 1) +
+  labs(title = "Bootstrap Sampling Distribution of Correlation (Income vs. Gas Price)",
+       x = "Correlation Coefficient",
+       y = "Frequency") +
+  theme_minimal()
+
+```
+
+Theory B:
+
+I wanted to see if gas stations in wealthier areas charge more for gas, so I did a bootstrap analysis to check the correlation between income and gas prices. The results showed an average correlation of 0.393, with a 95% confidence interval of (0.200, 0.568). Since the confidence interval doesn’t include zero, this means the correlation is statistically significant, but it’s still considered pretty weak since a correlation between 0.3 and 0.5 isn’t very strong. This suggests that gas prices might be a little higher in wealthier areas, but there are probably other things affecting prices too. Because of this, it is unclear whether the data strongly supports the theory. While wealthier areas may have slightly higher gas prices, the weak correlation suggests that income alone does not consistently determine gas prices.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ 
+
+
+# Define a function to calculate the difference in mean gas prices
+compute_mean_diff <- function(data) {
+  mean_stoplight <- mean(~Price, data = filter(data, Stoplight == "Y"))
+  mean_no_stoplight <- mean(~Price, data = filter(data, Stoplight == "N"))
+  return(mean_stoplight - mean_no_stoplight)
+}
+
+# Perform bootstrapping (resampling 10,000 times)
+set.seed(123)  # For reproducibility
+bootstrap_diff <- do(10000) * compute_mean_diff(resample(df))
+
+# Compute the 95% confidence interval
+ci_diff <- quantile(bootstrap_diff$compute_mean_diff, c(0.025, 0.975))
+mean_diff <- mean(bootstrap_diff$compute_mean_diff)
+
+# Create a table with results
+results_table <- tibble(
+  "Statistic" = c("Lower Bound (2.5%)", "Upper Bound (97.5%)", "Mean Difference"),
+  "Value" = c(ci_diff[1], ci_diff[2], mean_diff)
+)
+
+# Print the table
+print(results_table)
+
+hist(bootstrap_diff$compute_mean_diff, 
+     breaks = 50, 
+     col = "aquamarine", 
+     border = "black", 
+     main = "Bootstrap Distribution: Price Difference (Stoplight vs No Stoplight)",
+     xlab = "Difference in Mean Gas Price (Stoplight - No Stoplight)",
+     ylab = "Frequency")
+
+```
+
+Theory C:
+
+I examined whether gas stations located at stoplights charge higher prices for regular unleaded gasoline compared to those that are not at stoplights. The idea behind this theory is that stoplights increase traffic and customer convenience, allowing stations to set higher prices. To test this, I analyzed gas price data and found that the average price difference between stoplight and non-stoplight stations was -0.0033 (or about -0.33 cents per gallon). Using a bootstrap method with 10,000 resamples, I calculated a 95% confidence interval ranging from -3.73 cents to +3.08 cents. Since this confidence interval includes zero, I found no strong evidence that gas stations at stoplights consistently charge more than those without stoplights. Any observed difference in prices could be due to random variation rather than a meaningful pricing strategy.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# Load the dataset
+gaspricesdata <- read.csv("gasprices.csv")
+
+# Select relevant variables
+gaspricesdata <- gaspricesdata %>% select(Price, Highway)
+
+# Ensure 'Price' is numeric
+gaspricesdata <- gaspricesdata %>% mutate(Price = as.numeric(Price))
+
+# Define a function to calculate the difference in mean prices
+compute_mean_diff <- function(data) {
+  mean_no_highway <- mean(~Price, data = filter(data, Highway == "N"))
+  mean_yes_highway <- mean(~Price, data = filter(data, Highway == "Y"))
+  return(mean_no_highway - mean_yes_highway)
+}
+
+# Perform bootstrapping (resampling 10,000 times)
+set.seed(123)  # For reproducibility
+bootsults <- do(10000) * compute_mean_diff(resample(gaspricesdata))
+
+# Compute the 95% confidence interval
+conf_int <- confint(bootsults, level = 0.95)
+
+# Print the confidence interval
+print(conf_int)
+
+# Create a histogram of the bootstrap sampling distribution
+hist(bootsults$compute_mean_diff, 
+     breaks = 30, 
+     col = "purple", 
+     border = "black", 
+     main = "Bootstrap Sampling Distribution of Gas Price Difference (Highway vs. Non-Highway)",
+     xlab = "Mean Price Difference",
+     ylab = "Frequency")
+
+
+```
+Theory D:
+
+The theory that gas stations with direct highway access charge more suggests that stations near highways set higher prices than those further away. To test this, I conducted a bootstrap analysis comparing average gas prices between highway and non-highway stations, resampling the data 10,000 times. The results showed that gas stations near highways actually charged slightly less, with an average difference of -4.57 cents per gallon. The 95% confidence interval ranged from -8.1 cents to -0.91 cents, meaning that highway stations consistently had lower prices, and this result is statistically significant since the interval does not include zero. Because of this, the data does not support the theory that highway gas stations charge more. In fact, the opposite appears to be true—highway gas stations may have lower prices due to greater competition, which forces them to keep prices more competitive.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Select relevant variables
+pricesdata <- df %>% select(Price, Brand)
+
+# Define a function to compute the difference in mean prices
+compute_mean_diff <- function(data) {
+  mean_shell <- mean(~Price, data = filter(data, Brand == "Shell"))
+  mean_non_shell <- mean(~Price, data = filter(data, Brand != "Shell"))
+  return(mean_shell - mean_non_shell)
+}
+
+# Perform bootstrapping (resampling 10,000 times)
+set.seed(123)  # For reproducibility
+bootr <- do(10000) * compute_mean_diff(resample(pricesdata))
+
+# Compute the 95% confidence interval
+confint(bootr, level = 0.95)
+
+# Print summary statistics
+summary(bootr)
+
+# Create a histogram of the bootstrap distribution
+ggplot(bootr, aes(x = compute_mean_diff)) +
+  geom_histogram(binwidth = 0.01, fill = "orange", color = "black") +
+  labs(title = "Bootstrap Sampling Distribution of Price Difference (Shell vs. Non-Shell)",
+       x = "Mean Price Difference (Shell - Non-Shell)",
+       y = "Frequency") +
+  theme_classic()
+
+```
+
+
+Theory E: 
+
+The theory suggests that Shell gas stations charge more than other non-Shell brands. To test this, I used a bootstrap analysis to compare the average gas prices between Shell and non-Shell stations. I resampled the data 10,000 times and calculated the difference in mean prices each time. The results showed that, on average, Shell stations charged slightly more, but the 95% confidence interval for the price difference was between -0.010 and 0.065. This means that the difference could range from Shell actually charging about 1 cent less to charging about 6.5 cents more. Since the confidence interval includes zero, there isn’t enough strong evidence to say for sure that Shell consistently charges more than other brands. While the results suggest Shell might be slightly more expensive, the data doesn’t prove this in a way that rules out random chance. Therefore, this theory is not strongly supported by the data.
+
+
+## *Problem 2*\
+
+#### Part A
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Load the dataset
+sclass <- read.csv("sclass.csv")
+
+# Part A: Bootstrap Confidence Interval for Average Mileage (2011 S-Class 63 AMG)
+sclass_2011_63AMG <- sclass %>%
+  filter(year == 2011 & trim == "63 AMG")
+
+set.seed(123)  
+boot_mileage <- do(10000) * mean(resample(sclass_2011_63AMG$mileage))
+
+ci_2011_mileage <- confint(boot_mileage, level = 0.95, method = "quantile")
+
+print(ci_2011_mileage)
+```
+
+#### Part B
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Part B: Bootstrap Confidence Interval for Proportion of Black Cars (2014 S-Class 550)
+sclass_2014_550 <- sclass %>%
+  filter(year == 2014 & trim == "550") %>%
+  mutate(isBlack = (color == "Black"))
+
+set.seed(123)  
+boot_black <- do(10000) * mean(resample(sclass_2014_550$isBlack))
+
+ci_2014_black <- confint(boot_black, level = 0.95, method = "quantile")
+
+print(ci_2014_black)
+
+```
+
+## *Problem 3*
+
+#### Part A
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(boot)
+nbc_data <- read.csv("nbc_pilotsurvey.csv")
+filtered_data <- nbc_data %>% 
+  filter(Show %in% c("Living with Ed", "My Name is Earl"))
+ed_happy <- filtered_data %>% filter(Show == "Living with Ed") %>% pull(Q1_Happy)
+earl_happy <- filtered_data %>% filter(Show == "My Name is Earl") %>% pull(Q1_Happy)
+boot_diff <- function(data, indices) {
+  sample_ed <- sample(ed_happy, length(ed_happy), replace = TRUE)
+  sample_earl <- sample(earl_happy, length(earl_happy), replace = TRUE)
+  return(mean(sample_ed) - mean(sample_earl))
+}
+set.seed(123)  # Ensures reproducibility
+boot_results <- boot(data = filtered_data, statistic = boot_diff, R = 10000)
+ci <- boot.ci(boot_results, type = "perc")
+ci$percent
+```
+
+The question we wanted to answer was which show makes people happier. To find out, we used bootstrap sampling with 10,000 iterations to calculate the mean difference in happiness ratings between the two shows. The estimated difference was 0.149, but the 95% confidence interval ranged from -0.104 to 0.395. Since 0 is within this range, there is no clear proof that one show makes people happier than the other. While Living with Ed may have slightly higher happiness ratings, the difference could just be due to chance. Based on this data, both shows should be seen as having similar happiness ratings.
+
+#### Part B
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(boot)
+nbc_data <- read.csv("nbc_pilotsurvey.csv")
+filtered_data_reality <- nbc_data %>% 
+  filter(Show %in% c("The Biggest Loser", "The Apprentice: Los Angeles"))
+loser_annoyed <- filtered_data_reality %>% filter(Show == "The Biggest Loser") %>% pull(Q1_Annoyed)
+apprentice_annoyed <- filtered_data_reality %>% filter(Show == "The Apprentice: Los Angeles") %>% pull(Q1_Annoyed)
+boot_diff_annoyed <- function(data, indices) {
+  sample_loser <- sample(loser_annoyed, length(loser_annoyed), replace = TRUE)
+  sample_apprentice <- sample(apprentice_annoyed, length(apprentice_annoyed), replace = TRUE)
+  return(mean(sample_loser) - mean(sample_apprentice))
+}
+
+set.seed(123)  # Ensures reproducibility
+boot_results_annoyed <- boot(data = filtered_data_reality, statistic = boot_diff_annoyed, R = 10000)
+ci_annoyed <- boot.ci(boot_results_annoyed, type = "perc")
+ci_annoyed$percent
+```
+
+The data shows that people found The Apprentice: Los Angeles more annoying than The Biggest Loser. To compare the two, we used bootstrap sampling with 10,000 iterations to find the mean difference in Q1_Annoyed responses. The estimated difference was -0.271, and the 95% confidence interval was (-0.525 to -0.015). Since 0 is not in this range, the difference is statistically significant. This means The Apprentice: Los Angeles had higher annoyance ratings. Stakeholders should think about this when looking at how viewers react to these shows, but they should also consider that some of the difference could be due to chance.
+
+#### Part C
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+nbc_data <- read.csv("nbc_pilotsurvey.csv")
+dancing_data <- nbc_data %>% 
+  filter(Show == "Dancing with the Stars")
+confusing_count <- sum(dancing_data$Q2_Confusing >= 4, na.rm = TRUE)
+total_respondents <- nrow(dancing_data)
+p_hat <- confusing_count / total_respondents
+se <- sqrt((p_hat * (1 - p_hat)) / total_respondents)
+z_score <- qnorm(0.975)  # 1.96 for 95% confidence interval
+ci_lower <- p_hat - z_score * se
+ci_upper <- p_hat + z_score * se
+list(proportion = p_hat, lower_ci = ci_lower, upper_ci = ci_upper)
+```
+
+Based on the survey data, about 7.7% of American TV viewers found Dancing with the Stars confusing, giving it a score of 4 or 5 on the Q2_Confusing question. Using a normal approximation, we calculated a large-sample 95% confidence interval, which estimates the true percentage of confused viewers to be between 3.8% and 11.6%. Even though this is a small percentage, it still represents a significant number of people. Network executives might find this important since it means a noticeable portion of the audience struggles to understand the show.
+
+
+## *Problem 4*
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(boot)
+ebay_data <- read.csv("ebay.csv")
+ebay_data <- ebay_data %>% mutate(revenue_ratio = rev_after / rev_before)
+treatment_group <- ebay_data %>% filter(adwords_pause == 1) %>% pull(revenue_ratio)
+control_group <- ebay_data %>% filter(adwords_pause == 0) %>% pull(revenue_ratio)
+boot_diff_revenue_ratio <- function(data, indices) {
+  sample_treatment <- sample(treatment_group, length(treatment_group), replace = TRUE)
+  sample_control <- sample(control_group, length(control_group), replace = TRUE)
+  return(mean(sample_treatment) - mean(sample_control))
+}
+set.seed(123)
+boot_results_revenue_ratio <- boot(data = ebay_data, statistic = boot_diff_revenue_ratio, R = 10000)
+ci_revenue_ratio <- boot.ci(boot_results_revenue_ratio, type = "perc")
+ci_revenue_ratio$percent
+```
+
+* When eBay stopped using Google-sponsored search ads, its income changed. The study compared revenue ratios (revenue after/revenue before) for two groups—one that kept ads running and one that paused them. A bootstrap resampling method with 10,000 iterations was used to estimate the difference. The average difference between the two groups was -0.052, with a 95% confidence interval of (-0.091, -0.013). Since 0 is not in the interval, the difference is statistically significant. This means that stopping Google ads led to a lower revenue ratio. The results show that paid search helps eBay make more money than organic search alone. This proves that Google-sponsored ads are a good investment for eBay.
+
+
+
+
