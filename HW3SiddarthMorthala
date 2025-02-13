@@ -11,9 +11,9 @@ output:
 ---
 * UT EID: SRM5284
 
-* Link to Github:
+* Link to Github: https://github.com/siddarthmorthala/SDS315-2025/blob/e870611dc02adae81c7ef459729ebb9df8735ed4/HW3SiddarthMorthala
 
-## *Question 1*
+## *Problem 1*
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
@@ -63,45 +63,28 @@ I wanted to see if gas stations without competitors nearby charge more than thos
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
-# Ensure 'Price' and 'Income' are numeric
-df <- read.csv("gasprices.csv")
-df <- df %>% dplyr::mutate(Price = as.numeric(Price))
+df <- read.csv('gasprices.csv')
+
+bootlll <- do(10000) * coef(lm(Price ~ Income, data=mosaic::resample(df)))
 
 
-# Perform bootstrap for the correlation between Income and Price
-bootstrap_corr <- do(10000) * {
-  boot_sample <- resample(df)  # Resample the whole dataset
-  cor(boot_sample$Income, boot_sample$Price)  # Compute correlation
-}
+confint(bootlll, level = .95)
 
-# Compute 95% confidence interval
-ci_corr <- quantile(bootstrap_corr$result, c(0.025, 0.975))
-mean_corr <- mean(bootstrap_corr$result)
 
-# Create a table with results
-results_tabl <- tibble(
-  "Statistic" = c("Lower Bound (2.5%)", "Upper Bound (97.5%)", "Mean Correlation"),
-  "Value" = c(ci_corr[1], ci_corr[2], mean_corr)
-)
-
-# Print the table
-print(results_tabl)
-
-# Create a histogram of the bootstrap sampling distribution
-ggplot(bootstrap_corr, aes(x = result)) +
-  geom_histogram(binwidth = 0.01, fill = "beige", color = "black") +
-  geom_vline(xintercept = mean_corr, color = "red", linetype = "dashed", size = 1) +
-  geom_vline(xintercept = ci_corr, color = "blue", linetype = "dotted", size = 1) +
-  labs(title = "Bootstrap Sampling Distribution of Correlation (Income vs. Gas Price)",
-       x = "Correlation Coefficient",
-       y = "Frequency") +
-  theme_minimal()
-
+ggplot(df, aes(x = Income, y = Price, color = Brand)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Relationship Between Gas Prices and Income",
+       x = "Median Household Income ($)",
+       y = "Gas Price ($)") +
+  theme_classic()
 ```
+
+
 
 Theory B:
 
-I wanted to see if gas stations in wealthier areas charge more for gas, so I did a bootstrap analysis to check the correlation between income and gas prices. The results showed an average correlation of 0.393, with a 95% confidence interval of (0.200, 0.568). Since the confidence interval doesn’t include zero, this means the correlation is statistically significant, but it’s still considered pretty weak since a correlation between 0.3 and 0.5 isn’t very strong. This suggests that gas prices might be a little higher in wealthier areas, but there are probably other things affecting prices too. Because of this, it is unclear whether the data strongly supports the theory. While wealthier areas may have slightly higher gas prices, the weak correlation suggests that income alone does not consistently determine gas prices.
+I found that gas stations in wealthier areas tend to charge higher prices for regular unleaded gasoline. To test this idea, I ran a linear regression using gas prices and median household income from the dataset. The results show that for every $10,000 increase in median income, gas prices go up by about 1.25 cents per gallon (0.00000125 per dollar of income). The 95% confidence interval for this effect is (0.000000671, 0.000001825), meaning the real effect is likely within this range. Since the confidence interval does not include zero and the p-value is 0.0000412, this relationship is statistically significant. This means my data supports the idea that gas stations in richer areas charge more for gas. Even though the effect is small, it is consistent and real. I think this might be because people in wealthier areas are willing to pay more, gas stations have higher costs in these locations, or certain brands are more common in high-income neighborhoods.
+
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
  
@@ -150,10 +133,10 @@ I examined whether gas stations located at stoplights charge higher prices for r
 gaspricesdata <- read.csv("gasprices.csv")
 
 # Select relevant variables
-gaspricesdata <- gaspricesdata %>% select(Price, Highway)
+gaspricedata <- gaspricesdata %>% select(Price, Highway)
 
 # Ensure 'Price' is numeric
-gaspricesdata <- gaspricesdata %>% mutate(Price = as.numeric(Price))
+gaspricedata <- gaspricedata %>% mutate(Price = as.numeric(Price))
 
 # Define a function to calculate the difference in mean prices
 compute_mean_diff <- function(data) {
@@ -183,6 +166,7 @@ hist(bootsults$compute_mean_diff,
 
 
 ```
+
 Theory D:
 
 The theory that gas stations with direct highway access charge more suggests that stations near highways set higher prices than those further away. To test this, I conducted a bootstrap analysis comparing average gas prices between highway and non-highway stations, resampling the data 10,000 times. The results showed that gas stations near highways actually charged slightly less, with an average difference of -4.57 cents per gallon. The 95% confidence interval ranged from -8.1 cents to -0.91 cents, meaning that highway stations consistently had lower prices, and this result is statistically significant since the interval does not include zero. Because of this, the data does not support the theory that highway gas stations charge more. In fact, the opposite appears to be true—highway gas stations may have lower prices due to greater competition, which forces them to keep prices more competitive.
@@ -247,6 +231,9 @@ ci_2011_mileage <- confint(boot_mileage, level = 0.95, method = "quantile")
 print(ci_2011_mileage)
 ```
 
+Based on the sample of 116 cars, the 95% confidence interval for the average mileage of 2011 S-Class 63 AMG vehicles is between 26,208 and 31,749 miles, meaning we're pretty sure the true average mileage for all similar cars falls in this range.
+
+
 #### Part B
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
@@ -264,6 +251,8 @@ ci_2014_black <- confint(boot_black, level = 0.95, method = "quantile")
 print(ci_2014_black)
 
 ```
+
+From the 2889 cars in the dataset, the 95% confidence interval for the proportion of 2014 S-Class 550s that are black is between 41.64% and 45.28%, so there's a high chance that the actual percentage of black cars in the whole population is somewhere in this range.
 
 ## *Problem 3*
 
@@ -352,7 +341,3 @@ ci_revenue_ratio$percent
 ```
 
 * When eBay stopped using Google-sponsored search ads, its income changed. The study compared revenue ratios (revenue after/revenue before) for two groups—one that kept ads running and one that paused them. A bootstrap resampling method with 10,000 iterations was used to estimate the difference. The average difference between the two groups was -0.052, with a 95% confidence interval of (-0.091, -0.013). Since 0 is not in the interval, the difference is statistically significant. This means that stopping Google ads led to a lower revenue ratio. The results show that paid search helps eBay make more money than organic search alone. This proves that Google-sponsored ads are a good investment for eBay.
-
-
-
-
