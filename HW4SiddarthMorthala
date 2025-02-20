@@ -11,7 +11,7 @@ output:
 ---
 * UT EID: SRM5284
 
-* Link to Github: 
+* Link to Github: https://github.com/siddarthmorthala/SDS315-2025/blob/60e2e7977be67a84c7b4a09cf8bfee111653d0bd/HW4SiddarthMorthala
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
