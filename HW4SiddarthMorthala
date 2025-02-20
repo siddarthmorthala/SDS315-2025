@@ -1,0 +1,209 @@
+---
+title: "Homework 4"
+author: "Siddarth Morthala - SDS 315 UT Austin"
+date: "02-20-2025"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+  pdf_document:
+    toc: true
+---
+* UT EID: SRM5284
+
+* Link to Github: 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(mosaic)
+```
+
+# *Problem 1*
+
+```{r, echo=FALSE, warning=FALSE}
+nflip(n = 2021, prob = 0.024)
+
+flags <- do(100000) * nflip(n = 2021, prob = 0.024)
+head(flags)
+
+ggplot(flags) + 
+  geom_histogram(aes(x = nflip), binwidth = 1, fill = "yellow", color = "black") +
+  labs(title = "Distribution of Flagged Trades Under our Null Hypothesis",
+       x = "# of Flagged Trades",
+       y = "Frequency")
+
+sum(flags$nflip >= 70)
+sum(flags$nflip >= 70) / 100000
+```
+
+#### *Null Hypothesis:*
+
+The proportion of flagged trades for Iron Bank employees is equal to the baseline rate of 2.4%.
+
+#### *Test Statistic:*
+
+The test statistic is the number of flagged trades observed out of 2021 total trades. A higher number of flagged trades provides stronger evidence against the null hypothesis, suggesting that Iron Bank employees may be flagged at a higher rate than expected.
+
+#### *P value:*
+
+The p-value is 0.00205.
+
+#### *Conclusion:*
+
+Since the p-value is very small, we reject the null hypothesis. This suggests that the flagged trade rate for Iron Bank employees is significantly higher than the baseline rate of 2.4%, indicating that the observed pattern is unlikely to be due to random chance.
+
+
+# *Problem 2*
+
+```{r, echo=FALSE, warning=FALSE}
+nflip(n = 50, prob = 0.03)
+
+viol <- do(100000) * nflip(n = 50, prob = 0.03)
+head(viol)
+
+ggplot(viol) + geom_histogram(aes(x = nflip), binwidth = 1, fill = "blue", color = "black") +
+  labs(title = "Distribution of Health Code Violations Under Null Hypothesis",
+       x = "Number of Violations",
+       y = "Frequency")
+
+sum(viol$nflip >= 8)
+
+sum(viol$nflip >= 8) / 100000
+
+```
+
+#### *Null Hypothesis:*
+
+The proportion of health code violations for Gourmet Bites is equal to the citywide baseline of 3%.
+
+
+#### *Test Statistic:*
+
+The test statistic is the number of health code violations observed out of 50 inspections. A higher number of violations provides stronger evidence against the null hypothesis, indicating that Gourmet Bites may have a higher violation rate than expected.
+
+#### *P value:*
+
+The p-value is 0.00016.
+
+#### *Conclusion:*
+
+Since the p-value is very small, we reject the null hypothesis. This suggests that Gourmet Bites has a significantly higher health violation rate than the city average, making it unlikely that the observed violations occurred due to random chance.
+
+# *Problem 3:*
+
+```{r, echo=FALSE, warning=FALSE}
+expprop <- c(0.30, 0.25, 0.20, 0.15, 0.10)
+obscounts <- c(85, 56, 59, 27, 13)
+
+total_jurors <- sum(obscounts)
+expected_counts <- total_jurors * expprop
+
+
+chisq.test(x = obscounts, p = expprop)
+```
+
+#### *Null Hypothesis:*
+
+The jury selection process overseen by the judge follows the county’s population distribution.
+
+#### *Test Statistic:*
+
+The chi-squared statistic measures the difference between the observed jury composition and the expected distribution. A higher chi-squared value indicates a greater deviation from the expected proportions.
+
+#### *P Value:*
+
+The calculated p-value is 0.01445.
+
+#### *Conclusion:*
+
+Since the p-value is relatively small but not extremely low, there is some evidence of deviation from the expected distribution. However, it does not strongly confirm systematic bias in jury selection. Further investigation may be needed to rule out other potential explanations.
+
+# *Problem 4:*
+
+
+### Part A
+
+```{r, echo=FALSE, warning=FALSE}
+
+library(tidyverse)
+
+# Load letter frequency dataset
+lettfreq = read.csv("letter_frequencies.csv")
+
+# Normalize letter frequencies
+lettfreq$Probability = lettfreq$Probability / sum(lettfreq$Probability)
+
+# Load Brown Corpus sentences
+sentences = readLines("brown_sentences.txt")
+
+# Function to calculate chi-squared statistic
+calculate_chi_squared = function(sentence, freqtable) {
+  
+  # Ensure letter frequencies sum to 1
+  freqtable$Probability = freqtable$Probability / sum(freqtable$Probability)
+  
+  # Remove non-letters and convert to uppercase
+  clean_sentence = gsub("[^A-Za-z]", "", sentence)
+  clean_sentence = toupper(clean_sentence)
+  
+  # Count letter occurrences
+  obscounts = table(factor(strsplit(clean_sentence, "")[[1]], levels = freqtable$Letter))
+  
+  # Expected counts based on sentence length
+  total_letters = sum(obscounts)
+  expected_counts = total_letters * freqtable$Probability
+  
+  # Compute chi-squared statistic
+  chi_squared_stat = sum((obscounts - expected_counts)^2 / expected_counts)
+  
+  return(chi_squared_stat)
+}
+
+# Compute chi-squared statistics for all Brown Corpus sentences
+chi_sq_values = rep(0, length(sentences))
+for (i in seq_along(sentences)) {
+  chi_sq_values[i] = calculate_chi_squared(sentences[i], lettfreq)
+}
+
+
+plot(chi_sq_values, log = "y", main = "Chi-Squared Statistics for Brown Corpus", ylab = "Chi-Squared Value", xlab = "Sentence Index")
+```
+
+### Part B
+
+```{r, echo=FALSE, warning=FALSE}
+test_sentences = c(
+  "She opened the book and started to read the first chapter, eagerly anticipating what might come next.",
+  "Despite the heavy rain, they decided to go for a long walk in the park, crossing the main avenue by the fountain in the center.",
+  "The museum’s new exhibit features ancient artifacts from various civilizations around the world.",
+  "He carefully examined the document, looking for any clues that might help solve the mystery.",
+  "The students gathered in the auditorium to listen to the guest speaker’s inspiring lecture.",
+  "Feeling vexed after an arduous and zany day at work, she hoped for a peaceful and quiet evening at home, cozying up after a quick dinner with some TV, or maybe a book on her upcoming visit to Auckland.",
+  "The chef demonstrated how to prepare a delicious meal using only locally sourced ingredients, focusing mainly on some excellent dinner recipes from Spain.",
+  "They watched the sunset from the hilltop, marveling at the beautiful array of colors in the sky.",
+  "The committee reviewed the proposal and provided many points of useful feedback to improve the project’s effectiveness.",
+  "Despite the challenges faced during the project, the team worked tirelessly to ensure its successful completion, resulting in a product that exceeded everyone’s expectations."
+)
+
+# Compute chi-squared statistics for test sentences
+test_chi_sq = rep(0, length(test_sentences))
+for (i in 1:length(test_sentences)) {
+  test_chi_sq[i] = calculate_chi_squared(test_sentences[i], lettfreq)
+}
+
+# Convert results to dataframe
+test_results = data.frame(Sentence = 1:10, ChiSquared = test_chi_sq)
+
+# Print chi-squared values
+print(test_results)
+
+# Identify the sentence with the highest chi-squared value (most anomalous)
+most_anomalous_sentence = which.max(test_results$ChiSquared)
+cat("The most anomalous sentence is sentence number:", most_anomalous_sentence, "\n")
+
+# Visualize test sentence chi-squared values
+plot(test_results$Sentence, test_results$ChiSquared, type = "b", pch = 19, col = "orange",
+     main = "Chi-Squared Values for all Test Sentences",
+     xlab = "Sentence #", ylab = "Chi-Squared Value")
+```
