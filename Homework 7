@@ -11,7 +11,7 @@ output:
 ---
 * UT EID: SRM5284
 
-* Link to Github: 
+* Link to Github: https://github.com/siddarthmorthala/SDS315-2025/blob/b9cca1fbc4652c04250c282f80bf9371097b69d5/Homework%207
 
 ```{r, include=FALSE}
 library(ggplot2)
