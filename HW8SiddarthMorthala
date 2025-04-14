@@ -1,0 +1,138 @@
+---
+title: "Homework 8"
+author: "Siddarth Morthala - SDS 315 UT Austin"
+date: "04-13-2025"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+  pdf_document:
+    toc: true
+---
+
+* UT EID: SRM5284
+
+* Link to Github: 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+options(scipen = 999)
+library(tidyverse)
+library(ggplot2)
+library(kableExtra)
+library(mosaic)
+library(MatchIt)
+```
+
+
+# **Problem 1: Regression warm up**
+
+```{r cars}
+
+creatinine <- read_csv("creatinine.csv")
+
+```
+
+### *Part A*
+
+```{r}
+
+lm1 = lm(creatclear ~ age, data = creatinine)
+
+age_coeff <- coef(lm1)["age"]
+
+int_coeff <- coef(lm1)["(Intercept)"]
+
+subject <- int_coeff + age_coeff * 55
+
+```
+To determine the expected creatinine clearance rate for a 55-year-old, a linear model was fitted to the `creatinine.csv` dataset. The estimated clearance rate is 114 ml/minute. This value was calculated using the regression equation:  
+creatclear(55) = B₀ (intercept) + B₁ (age coefficient) * 55,  
+where B₀ and B₁ were obtained from the fitted model by identifying the intercept and the coefficient for age.
+
+### *Part B*
+
+```{r}
+
+age_coeff
+
+```
+
+From the linear model we fitted earlier, the value of B₁ (the age coefficient or slope) represents the change in creatinine clearance rate for each one-year increase in age. Since B₁ is -0.62, this indicates that creatinine clearance decreases by 0.62 mL/minute per year.
+
+### *Part C*
+
+```{r}
+
+c_young_residual <-  135 - (int_coeff + age_coeff * 40)
+c_old_residual <- 112 - (int_coeff + age_coeff * 60) 
+
+```
+
+Using the creatclear(age) formula from the earlier model, we compared observed and expected values to find the residuals. For the 40-year-old, the actual clearance rate is 135 mL/minute, which exceeds the model’s expected value by 12 mL/minute (135 − [B₀ + B₁ × 40] = 12). For the 60-year-old, the observed rate of 112 mL/minute is only 1.38 mL/minute above the expected value. Therefore, the 40-year-old is relatively healthier for their age than the 60-year-old, based on how much their actual clearance exceeds the model prediction.
+
+# **Problem 2: Modeling disease growth**
+
+```{r}
+
+covid <- read_csv("covid.csv")
+italy_covid <- filter(covid, country == "Italy")
+spain_covid <- filter(covid, country == "Spain")
+
+model_italy <- lm(log(deaths) ~ days_since_first_death, data = italy_covid)
+
+growth_rate_italy <- coef(model_italy)[2]
+
+doubling_time_italy <- log(2) / growth_rate_italy
+
+boot_italy <- do(10000)*lm(log(deaths) ~ days_since_first_death, data = resample(italy_covid))
+
+confint(boot_italy)
+
+confint(log(2)/boot_italy$days_since_first_death)
+
+model_spain <- lm(log(deaths) ~ days_since_first_death, data = spain_covid)
+
+growth_rate_spain <- coef(model_spain)[2]
+
+doubling_time_spain <- log(2) / growth_rate_spain
+
+boot_spain <- do(10000)*lm(log(deaths) ~ days_since_first_death, data = resample(spain_covid))
+
+confint(boot_spain)
+
+confint(log(2)/boot_spain$days_since_first_death)
+
+ggplot(covid, aes(x = days_since_first_death, y = deaths, color = country)) +
+  geom_line() +
+  labs(title = "Daily Deaths from COVID-19 Over Time",
+       x = "# of Days Since First Death",
+       y = "Daily Deaths reported",
+       color = "Country") +
+  theme_classic()
+
+```
+
+I applied the exponential model log(deaths) = log(K) + B × (days_since_first_death) for each country, where B represents the daily growth rate. The doubling time was calculated using the formula log(2)/B. To generate confidence intervals, we performed 10,000 bootstrap trials of the exponential model for both Italy and Spain using `do(10000)`.
+
+For Italy, the estimated daily growth rate was 0.183, with a corresponding doubling time of 3.8 days. The 95% bootstrapped confidence intervals were (0.160, 0.208) for the growth rate and (3.3, 4.3) for the doubling time.
+
+For Spain, the estimated daily growth rate was 0.276, with a doubling time of 2.5 days. The 95% bootstrapped confidence intervals were (0.234, 0.317) for the growth rate and (2.2, 3.0) for the doubling time.
+
+# **Problem 3: Price Elasticity of Demand**
+
+```{r}
+
+milk <- read_csv("milk.csv")
+
+milk_model <- lm(log(sales) ~ log(price), data = milk)
+
+beta_est <- coef(milk_model)[2]
+
+boot_milk <- do(10000)*lm(log(sales) ~ log(price), data = resample(milk))
+
+print(confint(boot_milk, level = 0.95))
+
+```
+
+The estimated price elasticity of demand for milk is approximately -1.62, with a 95% confidence interval of (-1.77, -1.45). This means that a 1% increase in milk price leads to an estimated 1.62% decrease in quantity demanded. To calculate this elasticity, the original power-law model Q = K × P^B was log-transformed into the linear form: log(sales) = log(K) + B × log(price). A linear regression model was then fitted using `lm` to estimate the elasticity value B, and 10,000 bootstrap trials were performed to generate the 95% confidence interval for B.
